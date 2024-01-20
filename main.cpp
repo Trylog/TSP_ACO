@@ -5,6 +5,7 @@
 #include <random>
 #include <fstream>
 #include <vector>
+#include <list>
 #include <queue>
 #include <math.h>
 #include <numeric>
@@ -49,112 +50,149 @@ int main()
         ///ekstrakcja nazwy pliku testu z lini
         GraphMatrix matrix = GraphMatrix(namesOfTests.at(t).substr(0, tempString));
         //
-        double timeAvg = 0.0;
+
         //
         ///ekstrakcja liczby powtórzeń danego testu
         int b1 = stoi(namesOfTests.at(t).substr(tempString, namesOfTests.at(t).substr(tempString).find(' ') - tempString));
-        //
-        //int minSum;
-        //int *minSeq;
-        for (int k = 0; k < b1; k++) {
+        vector<pair<pair<int, int>, bool>> vars;
+        vars.emplace_back(pair(1,1), true);
+        vars.emplace_back(pair(1,2), true);
+        vars.emplace_back(pair(1,3), true);
+        vars.emplace_back(pair(1,5), true);
+        vars.emplace_back(pair(2,1), true);
+        vars.emplace_back(pair(3,1), true);
+        vars.emplace_back(pair(5,1), true);
 
-            //
-            /*///inicjalizacja zmiennych
-            int *seq = new int[matrix.v-1];//matrix.v -> liczba wierzchołków w grafie
-            for (int i = 0; i < matrix.v-1; ++i) {
-                seq[i] = i+1;
-            }
-            minSum = INT32_MAX;
-            minSeq = new int[matrix.v];
-            int sum;*/
-            auto t1 = std::chrono::high_resolution_clock::now();//pomiar czasu
+        for(auto var : vars){
+            double timeAvg = 0.0;
+            int avgSum = 0;
+            for (int k = 0; k < b1; k++) {
 
-            //----------------//
-            //główny algorytm
-            //--------------//
+                auto t1 = std::chrono::high_resolution_clock::now();//pomiar czasu
+                auto t2 = std::chrono::high_resolution_clock::now();
 
-            unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-            std::mt19937 gen(seed);
-            std::uniform_real_distribution<double> rdDouble(0.0, 1.0);
+                //----------------//
+                //główny algorytm
+                //--------------//
 
-            int a = 1, b = 1;
+                unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+                std::mt19937 gen(seed);
+                std::uniform_real_distribution<double> rdDouble(0.0, 1.0);
 
-            ///tablica feromonów
-            auto feromons = new double*[matrix.v];
-            for (int i = 0; i < matrix.v; ++i) {
-                feromons[i] = new double [matrix.v];
-                for (int j = 0; j < matrix.v; ++j) feromons[i][j] = 0.2;
-            }
+                int a = var.first.first, b = var.first.second;
 
-            auto seq = new int*[matrix.v];
-            for (int i = 0; i < matrix.v; ++i) {
-                seq[i] = new int [matrix.v + 1];
-                for (int j = 0; j < matrix.v; ++j) seq[i][j] = -1;
-            }
-
-            int iterations = 1000;
-            for (int i = 0; i < iterations; ++i) {
-                for (int j = 0; j < matrix.v; ++j) { ///dla j-tej mrówki
-                    vector<int> remainingNodes;
-                    remainingNodes.reserve(matrix.v);
-                    for (int l = 0; l < matrix.v; ++l) {
-                        if(l!=j)remainingNodes.push_back(l);
-                    }
-                    int lastNode = j;
-                    seq[j][1] = j;
-                    for (int l = 0; l < matrix.v-1; ++l) {
-                        double sum = 0;
-                        queue<pair<double, int>> probabilities;
-                        for(auto node:remainingNodes){
-                            auto temp = pow(feromons[lastNode][node], a) * pow(200.0 / matrix.matrix[lastNode][node], b);
-                            sum += temp;
-                            probabilities.emplace(temp, node);
-                        }
-
-                        auto rdN = rdDouble(gen);
-                        pair<double, int> temp;
-                        do {
-                            temp = probabilities.front();
-                            rdN -= temp.first / sum;
-                        }while (rdN > 0);
-
-                        seq[j][0] += matrix.matrix[lastNode][temp.second];
-                        remainingNodes.erase(remove(remainingNodes.begin(), remainingNodes.end(), temp.second), remainingNodes.end());
-                        seq[j][l + 2] = temp.second;
-                        lastNode = temp.second;
-                    }
-
-
-
-
+                ///tablica feromonów
+                auto feromons = new double*[matrix.v];
+                for (int i = 0; i < matrix.v; ++i) {
+                    feromons[i] = new double [matrix.v];
+                    for (int j = 0; j < matrix.v; ++j) feromons[i][j] = 0.2;
                 }
 
+                auto seq = new int*[matrix.v];
+                for (int i = 0; i < matrix.v; ++i) {
+                    seq[i] = new int [matrix.v + 1];
+                    for (int j = 0; j < matrix.v + 1; ++j) seq[i][j] = -1;
+                }
 
+                int best = INT32_MAX;
+                int* bestSeq = nullptr;
+                int iterations = 1000;
+                auto iterWithOutChange = 0;
+                for (int i = 0; iterWithOutChange<20 &&
+                (std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - t1)
+                < (std::chrono::duration<double>)600.0); ++i) {
+
+                    bool change = false;
+                    //cout<<"iteration: "<<i<<endl;
+                    for (int j = 0; j < matrix.v; ++j) {
+                        for (int l = 0; l < matrix.v + 1; ++l) seq[j][l] = 0;
+                    }
+
+                    for (int j = 0; j < matrix.v; ++j) { ///dla j-tej mrówki
+
+                        list<int> remainingNodes;
+                        for (int l = 0; l < matrix.v; ++l) {
+                            if(l != j)remainingNodes.push_back(l);
+                        }
+                        int lastNode = j;
+                        seq[j][1] = j;
+                        for (int l = 0; l < matrix.v-1; ++l) {
+                            /*cout<<endl<<endl;
+                            for(auto g:remainingNodes) cout<<g<<" ";*/
+                            double sum = 0;
+                            queue<pair<double, int>> probabilities;
+                            for(auto node:remainingNodes){
+                                auto temp = pow(feromons[lastNode][node], a) * pow(200.0 / matrix.matrix[lastNode][node], b);
+                                sum += temp;
+                                probabilities.emplace(temp, node);
+                            }
+
+                            auto rdN = rdDouble(gen);
+                            pair<double, int> temp;
+                            do {
+                                temp = probabilities.front();
+                                rdN -= temp.first / sum;
+                                probabilities.pop();
+                            }while (rdN > 0);
+                            seq[j][0] += matrix.matrix[lastNode][temp.second];
+                            remainingNodes.remove(temp.second);
+                            seq[j][l + 2] = temp.second;
+                            lastNode = temp.second;
+                        }
+                        seq[j][0] += matrix.matrix[lastNode][j];
+                    }
+                    for (int l = 0; l < matrix.v; ++l) {
+                        for (int j = 0; j < matrix.v; ++j) feromons[l][j] *= 0.5;
+                    }
+                    for (int j = 0; j < matrix.v ; ++j) {
+                        for (int l = 1; l < matrix.v; ++l) {
+                            feromons[seq[j][l]][seq[j][l + 1]] += seq[j][0];
+                        }
+                        feromons[seq[j][matrix.v]][seq[j][1]] += seq[j][0];
+                    }
+                    for (int j = 0; j < matrix.v; ++j) {
+                        if(seq[j][0] < best) {
+                            best = seq[j][0];
+                            bestSeq = seq[j];
+                            cout<<best<<endl;
+                            change = true;
+                            t2 = std::chrono::high_resolution_clock::now();
+                        }
+                    }
+                    if (change){
+                        iterWithOutChange = 0;
+                    }else iterWithOutChange++;
+
+
+                    /*
+                    cout<<endl<<endl;
+                    for (int z = 0; z < matrix.v; ++z) {
+                        for (int q = 0; q < matrix.v; ++q) cout<<seq[z][q]<<" ";
+                        cout<<endl;
+                    }*/
+                }
+                auto tDiv = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+                //matrix.display();
+                //cout << endl << minSum << endl;
+                /*for (int i = 0; i < matrix.v-1; ++i) {
+                    cout << minSeq[i] << " ";
+                }*/
+                cout << tDiv.count();
+                out << tDiv.count() << ";" << best << "; [ ";
+                for (int i = 1; i < matrix.v + 1; ++i) {
+                   out << bestSeq[i] << " ";
+                }
+                out << "]" << endl;
+                timeAvg += tDiv.count();
+                avgSum += best;
             }
-
-
-
-            auto t2 = std::chrono::high_resolution_clock::now();
-            auto tDiv = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
-            //matrix.display();
-            //cout << endl << minSum << endl;
-            /*for (int i = 0; i < matrix.v-1; ++i) {
-                cout << minSeq[i] << " ";
-            }*/
-            cout << tDiv.count();
-            out << tDiv.count() << endl;
-            timeAvg += tDiv.count();
-            //delete[] seq;
-            //if(k!=b1-1)delete[] minSeq;
-            //----------------//
+            timeAvg /= (double) b1;
+            avgSum /= b1;
+            out << namesOfTests.at(t).substr(0, tempString) <<";" << timeAvg<<";" << avgSum <<";" << var.first.first <<";" << var.first.second << endl <<endl;
         }
-        timeAvg /= (double) b1;
-       /* out << namesOfTests.at(t).substr(0, tempString) <<";" << timeAvg<<";" << minSum<< "; [0 ";
-        for (int i = 0; i < matrix.v-1; ++i) {
-            out << minSeq[i] << " ";
-        }
-        out<<"0]"<<endl<<endl;
-        delete[] minSeq;*/
+
+
+
     }
     out.close();
     //system("pause");
