@@ -51,13 +51,13 @@ build cmake_object_order_depends_target_TSP_ACO: phony || CMakeFiles/TSP_ACO.dir
 
 build CMakeFiles/TSP_ACO.dir/main.cpp.obj: CXX_COMPILER__TSP_ACO_unscanned_Debug C$:/Users/micha/CLionProjects/TSP_ACO/main.cpp || cmake_object_order_depends_target_TSP_ACO
   DEP_FILE = CMakeFiles\TSP_ACO.dir\main.cpp.obj.d
-  FLAGS = -static-libstdc++ -static-libgcc -g -fdiagnostics-color=always
+  FLAGS = -static-libstdc++ -static-libgcc -g -std=gnu++20 -fdiagnostics-color=always
   OBJECT_DIR = CMakeFiles\TSP_ACO.dir
   OBJECT_FILE_DIR = CMakeFiles\TSP_ACO.dir
 
 build CMakeFiles/TSP_ACO.dir/GraphMatrix.cpp.obj: CXX_COMPILER__TSP_ACO_unscanned_Debug C$:/Users/micha/CLionProjects/TSP_ACO/GraphMatrix.cpp || cmake_object_order_depends_target_TSP_ACO
   DEP_FILE = CMakeFiles\TSP_ACO.dir\GraphMatrix.cpp.obj.d
-  FLAGS = -static-libstdc++ -static-libgcc -g -fdiagnostics-color=always
+  FLAGS = -static-libstdc++ -static-libgcc -g -std=gnu++20 -fdiagnostics-color=always
   OBJECT_DIR = CMakeFiles\TSP_ACO.dir
   OBJECT_FILE_DIR = CMakeFiles\TSP_ACO.dir
 

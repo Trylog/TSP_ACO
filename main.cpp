@@ -2,8 +2,12 @@
 
 #include <iostream>
 #include <chrono>
+#include <random>
 #include <fstream>
 #include <vector>
+#include <queue>
+#include <math.h>
+#include <numeric>
 #include "GraphMatrix.h"
 
 using namespace std;
@@ -38,17 +42,17 @@ int main()
         cout<<"Nie można utworzyć pliku wynikowego"<<endl;
         return 0;
     }
-    for(int t =0; t<tests;t++)
+    for(int t = 0; t<tests;t++)
     {
-        auto temp = namesOfTests.at(t).find(' ');
+        auto tempString = namesOfTests.at(t).find(' ');
         //
         ///ekstrakcja nazwy pliku testu z lini
-        GraphMatrix matrix = GraphMatrix(namesOfTests.at(t).substr(0, temp));
+        GraphMatrix matrix = GraphMatrix(namesOfTests.at(t).substr(0, tempString));
         //
         double timeAvg = 0.0;
         //
         ///ekstrakcja liczby powtórzeń danego testu
-        int b1 = stoi(namesOfTests.at(t).substr(temp, namesOfTests.at(t).substr(temp).find(' ')-temp));
+        int b1 = stoi(namesOfTests.at(t).substr(tempString, namesOfTests.at(t).substr(tempString).find(' ') - tempString));
         //
         //int minSum;
         //int *minSeq;
@@ -69,6 +73,12 @@ int main()
             //główny algorytm
             //--------------//
 
+            unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+            std::mt19937 gen(seed);
+            std::uniform_real_distribution<double> rdDouble(0.0, 1.0);
+
+            int a = 1, b = 1;
+
             ///tablica feromonów
             auto feromons = new double*[matrix.v];
             for (int i = 0; i < matrix.v; ++i) {
@@ -76,9 +86,46 @@ int main()
                 for (int j = 0; j < matrix.v; ++j) feromons[i][j] = 0.2;
             }
 
+            auto seq = new int*[matrix.v];
+            for (int i = 0; i < matrix.v; ++i) {
+                seq[i] = new int [matrix.v + 1];
+                for (int j = 0; j < matrix.v; ++j) seq[i][j] = -1;
+            }
+
             int iterations = 1000;
             for (int i = 0; i < iterations; ++i) {
                 for (int j = 0; j < matrix.v; ++j) { ///dla j-tej mrówki
+                    vector<int> remainingNodes;
+                    remainingNodes.reserve(matrix.v);
+                    for (int l = 0; l < matrix.v; ++l) {
+                        if(l!=j)remainingNodes.push_back(l);
+                    }
+                    int lastNode = j;
+                    seq[j][1] = j;
+                    for (int l = 0; l < matrix.v-1; ++l) {
+                        double sum = 0;
+                        queue<pair<double, int>> probabilities;
+                        for(auto node:remainingNodes){
+                            auto temp = pow(feromons[lastNode][node], a) * pow(200.0 / matrix.matrix[lastNode][node], b);
+                            sum += temp;
+                            probabilities.emplace(temp, node);
+                        }
+
+                        auto rdN = rdDouble(gen);
+                        pair<double, int> temp;
+                        do {
+                            temp = probabilities.front();
+                            rdN -= temp.first / sum;
+                        }while (rdN > 0);
+
+                        seq[j][0] += matrix.matrix[lastNode][temp.second];
+                        remainingNodes.erase(remove(remainingNodes.begin(), remainingNodes.end(), temp.second), remainingNodes.end());
+                        seq[j][l + 2] = temp.second;
+                        lastNode = temp.second;
+                    }
+
+
+
 
                 }
 
@@ -102,7 +149,7 @@ int main()
             //----------------//
         }
         timeAvg /= (double) b1;
-       /* out << namesOfTests.at(t).substr(0, temp) <<";" << timeAvg<<";" << minSum<< "; [0 ";
+       /* out << namesOfTests.at(t).substr(0, tempString) <<";" << timeAvg<<";" << minSum<< "; [0 ";
         for (int i = 0; i < matrix.v-1; ++i) {
             out << minSeq[i] << " ";
         }
